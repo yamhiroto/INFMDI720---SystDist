@@ -37,7 +37,7 @@ public class Master {
 		FileWriter writer = new FileWriter(path);
 		
 		
-		// 0 - Phase de préparation: envoi des Slave.jar et des fichiers sur les trois ordis,
+	// 0 - Phase de préparation: envoi des Slave.jar et des fichiers sur les trois ordis,
 		
 		int i = 0;
 		for (String ordi : listeOrdinateurs) {
@@ -83,16 +83,18 @@ public class Master {
 		writer.close();
 		
 		
-		// 1 - 	MAP
+	// 1 - 	MAP
+		
 		System.out.println(" ======= Starting MAP ======");
 		//timer
 		long startMap_timer = System.currentTimeMillis();
 		
 		
-		int numSlave = 0;	
+		int numMap = 0;	
 		for (Map.Entry<String, Integer> pair : ordis_fonctionnels.entrySet()) {
 			//lancer le slave sur chaque ordi
 			System.out.println("Ordinateur: " + pair.getKey()+" - Fichier: S"+pair.getValue() + ".txt");
+			
 			ProcessBuilder launchSlave = new ProcessBuilder("ssh","yamakawa@"+pair.getKey(),"java","-jar","/tmp/hyamakawa/slave.jar","0","/tmp/hyamakawa/splits/S"+pair.getValue()+".txt");
 			Process slaveStart = launchSlave.start();
 			int f0 = slaveStart.waitFor();  
@@ -103,17 +105,21 @@ public class Master {
 				output(is);
 				copy("machines_used.txt","/home/yamhiroto/Desktop/","yamakawa@"+pair.getKey()+":/tmp/hyamakawa/");
 				
-				numSlave +=1;	
+				numMap +=1;	
 			} else {
 				output(es);
+				
 			}
 		}
-		if (numSlave == 3) {
-			System.out.println(" ====== MAP Finished ======");
 		
+		if (numMap == 3) {
+			System.out.println(" ====== MAP Finished ======");
 		} else {
 			System.out.println("Got an issue with the MAP");
 		}
+		//display hashmap ordis_fonctionnels
+		System.out.println(ordis_fonctionnels.entrySet());
+		
 		
 		//end timer
 		long endMap_timer = System.currentTimeMillis();
@@ -132,6 +138,7 @@ public class Master {
 		for (Map.Entry<String, Integer> pair : ordis_fonctionnels.entrySet()) {
 			
 			System.out.println("Ordinateur: " + pair.getKey()+" - Fichier: UM"+pair.getValue() + ".txt");
+			
 			ProcessBuilder launchSlave = new ProcessBuilder("ssh","yamakawa@"+pair.getKey(),"java","-jar","/tmp/hyamakawa/slave.jar","1","/tmp/hyamakawa/maps/UM"+pair.getValue()+".txt");
 			Process slaveStart = launchSlave.start();
 			int f0 = slaveStart.waitFor();  
@@ -156,6 +163,9 @@ public class Master {
 		long endShuffle_timer = System.currentTimeMillis();
 		long totalShuffle_timer = endShuffle_timer - startShuffle_timer;
 		
+		
+		
+		
 		System.out.println(" ======= Starting REDUCE ======");
 		long startReduce_timer = System.currentTimeMillis();
 		
@@ -176,7 +186,7 @@ public class Master {
 				output(es);
 			}
 		}
-		if (numSlave == 3) {
+		if (numMap == 3) {
 			System.out.println(" ====== Reduce Finished ======");
 		
 		} else {
@@ -371,8 +381,11 @@ public class Master {
 	
 	//FONCTION NON TERMINE
 	public static void launchSlave(Object[] args ) throws IOException, InterruptedException {
+		//launchSlave(MAP, ordis_fonctionnels, S, 1)
+		
 		//lancer le slave sur chaque ordi
 		String mode = (String) args[0];
+		@SuppressWarnings("unchecked")
 		HashMap<String, Integer> ordis_fonctionnels= (HashMap<String, Integer>) args[1];
 		
 		String prefix_file = (String) args[2];
@@ -385,7 +398,7 @@ public class Master {
 		for (Map.Entry<String, Integer> pair : ordis_fonctionnels.entrySet()) {
 			
 			System.out.println("Ordinateur: " + pair.getKey()+" - Fichier: " +prefix_file+pair.getValue() + ".txt");
-			ProcessBuilder launchSlave = new ProcessBuilder("ssh","yamakawa@"+pair.getKey(),"java","-jar","/tmp/hyamakawa/slave.jar",option,"/tmp/hyamakawa/maps/UM"+pair.getValue()+".txt");
+			ProcessBuilder launchSlave = new ProcessBuilder("ssh","yamakawa@"+pair.getKey(),"java","-jar","/tmp/hyamakawa/slave.jar",option,"/tmp/hyamakawa/maps/"+prefix_file+pair.getValue()+".txt");
 			Process slaveStart = launchSlave.start();
 			int f0 = slaveStart.waitFor();  
 			InputStream is = slaveStart.getInputStream();
